@@ -15,14 +15,20 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import com.example.fitspot.ui.models.WardrobeItem
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fitspot.models.WardrobeItem
+import com.example.fitspot.viewmodel.WardrobeViewModel
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 
 @Composable
-fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
+fun HomeScreen(
+    viewModel: WardrobeViewModel = viewModel(),
+    onHomeScreenSuccess: () -> Unit
+) {
     DisposableEffect(Unit) {
         Log.d("FitSpotLifeCycle", "HomeScreen: Entered Screen (Composition)")
         onDispose {
@@ -32,15 +38,8 @@ fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
 
     var selectedTab by remember { mutableStateOf(0) }
 
-    // Sample Recent Scans
-    val recentScans = remember {
-        listOf(
-            WardrobeItem("1", "Denim Jacket", "Jackets", "Levi's", "$89.99"),
-            WardrobeItem("2", "White Sneakers", "Footwear", "Nike", "$110.00"),
-            WardrobeItem("3", "Leather Bag", "Accessories", "Coach", "$195.00"),
-            WardrobeItem("4", "Graphic Tee", "Shirts", "Uniqlo", "$24.99")
-        )
-    }
+    // Observe live Firebase data instead of the hardcoded list
+    val wardrobeItems by viewModel.wardrobeItems.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -61,7 +60,7 @@ fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
                     selected = selectedTab == 2,
                     onClick = {
                         selectedTab = 2
-                        onHomeScreenSuccess() // Log out when Profile/Log out clicked
+                        onHomeScreenSuccess()
                     },
                     label = { Text("Profile") },
                     icon = { Text("👤") }
@@ -75,7 +74,6 @@ fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // Header Title
             Text(
                 text = "FitSpot",
                 style = MaterialTheme.typography.headlineMedium
@@ -83,22 +81,29 @@ fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 📸 Hero Action: Scan an Outfit
+            // Create Operation Trigger
             Button(
-                onClick = { /* TODO: Open Camera / Image Scan */ },
+                onClick = {
+                    val testItem = WardrobeItem(
+                        title = "Test Jacket",
+                        category = "Jackets",
+                        retailer = "TestBrand",
+                        price = "$49.99"
+                    )
+                    viewModel.addItem(testItem)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             ) {
                 Text(
-                    text = "📷  Scan an Outfit",
+                    text = "➕ Add Mock Item to Database",
                     style = MaterialTheme.typography.titleMedium
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 🕒 Recent Scans Section Header
             Text(
                 text = "Recent Scans",
                 style = MaterialTheme.typography.titleLarge
@@ -106,13 +111,13 @@ fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Recent Scans Grid
+            // Read Operation Display
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(recentScans) { item ->
-                    WardrobeCard(item = item)
+                items(wardrobeItems) { item ->
+                    WardrobeCard(item = item, onDelete = { viewModel.deleteItem(item.id) })
                 }
             }
         }
@@ -120,7 +125,7 @@ fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
 }
 
 @Composable
-fun WardrobeCard(item: WardrobeItem) {
+fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -129,8 +134,11 @@ fun WardrobeCard(item: WardrobeItem) {
     ) {
         Column(
             modifier = Modifier.padding(12.dp)
-        )
-        {
+        ) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.titleMedium
+            )
             Text(
                 text = item.category.uppercase(),
                 style = MaterialTheme.typography.labelSmall,
@@ -138,13 +146,16 @@ fun WardrobeCard(item: WardrobeItem) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "${item.retailer} * ${item.price}",
+                text = "${item.retailer}\n${item.price}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Delete Operation Trigger
+            Button(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {
+                Text("Delete")
+            }
         }
     }
 }
-
-
-
