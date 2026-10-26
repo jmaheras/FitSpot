@@ -19,6 +19,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.fitspot.ui.theme.FitSpotTheme
 import com.example.fitspot.ui.screens.LoginScreen
 import com.example.fitspot.ui.screens.HomeScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fitspot.viewmodel.AuthViewModel
 
 import android.util.Log
 private const val TAG = "FitSpotLifeCycle"
@@ -30,13 +32,20 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent{
             FitSpotTheme{
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    var currentScreen by remember { mutableStateOf("login") }
+                val authViewModel: AuthViewModel = viewModel()
+                val authState by authViewModel.uiState.collectAsState()
 
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
-                        when (currentScreen) {
-                            "login" -> LoginScreen(onLoginSuccess= { currentScreen = "home"})
-                            "home" -> HomeScreen(onHomeScreenSuccess = {currentScreen = "login"})
+                        if (authState.isLoggedIn) {
+                            HomeScreen(onHomeScreenSuccess = { authViewModel.signOut() })
+                        } else {
+                            LoginScreen(
+                                isLoading = authState.isLoading,
+                                errorMessage = authState.error,
+                                onSignIn = authViewModel::signIn,
+                                onSignUp = authViewModel::signUp
+                            )
                         }
                     }
                 }
