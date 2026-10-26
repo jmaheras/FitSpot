@@ -20,10 +20,16 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.fitspot.ui.theme.FitSpotTheme
+import androidx.compose.material3.CircularProgressIndicator
 
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
+fun LoginScreen(
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
+    onSignIn: (String, String) -> Unit,
+    onSignUp: (String, String) -> Unit
+) {
     DisposableEffect(Unit) {
         Log.d("FitSpotLifeCycle", "LoginScreen: Entered Screen (Composition)")
         onDispose {
@@ -84,7 +90,7 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        error?.let {
+        (error ?: errorMessage)?.let {
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = it, color = MaterialTheme.colorScheme.error)
         }
@@ -95,19 +101,34 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 if (email.isBlank() || password.isBlank()) {
                     error = "Enter your email and password"
                 } else {
-                    onLoginSuccess()
+                    onSignIn(email.trim(), password)
                 }
             },
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "Login")
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                Text(text = "Login")
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
         TextButton(onClick = { Log.d("FitSpotLifeCycle", "LoginScreen: Forgot password clicked") }) {
             Text("Forgot password?")
         }
-        TextButton(onClick = { Log.d("FitSpotLifeCycle", "LoginScreen: Create account clicked") }) {
+        TextButton(
+            onClick = {
+                Log.d("FitSpotLifeCycle", "LoginScreen: Create account clicked")
+                if (email.isBlank() || password.isBlank()) {
+                    error = "Enter your email and password"
+                } else {
+                    onSignUp(email.trim(), password)
+                }
+            },
+            enabled = !isLoading
+        ) {
             Text("Create account")
         }
     }
@@ -117,6 +138,6 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 @Composable
 fun LoginScreenPreview() {
     FitSpotTheme {
-        LoginScreen(onLoginSuccess = {})
+        LoginScreen(onSignIn = { _, _ -> }, onSignUp = { _, _ -> })
     }
 }
