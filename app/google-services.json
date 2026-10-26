@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "482569197454",
+    "project_id": "fitspot-6a77d",
+    "storage_bucket": "fitspot-6a77d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:482569197454:android:6cf5273be75c2a4f67f6df",
+        "android_client_info": {
+          "package_name": "com.example.fitspot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGzH1QpK3XgG2GA94-q0WRAfJZBaRiGYk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
