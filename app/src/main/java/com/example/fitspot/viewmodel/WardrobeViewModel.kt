@@ -23,6 +23,10 @@ class WardrobeViewModel : ViewModel() {
         }
     }
 
+    fun updateItemPrice(itemId: String, newPrice: String) {
+        repository.updateWardrobeItemPrice(itemId, newPrice)
+    }
+
     fun addItem(item: WardrobeItem) = repository.addItem(item)
     fun updateItem(item: WardrobeItem) = repository.updateItem(item)
     fun deleteItem(itemId: String) = repository.deleteItem(itemId)
