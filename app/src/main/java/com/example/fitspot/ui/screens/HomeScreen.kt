@@ -117,7 +117,11 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(wardrobeItems) { item ->
-                    WardrobeCard(item = item, onDelete = { viewModel.deleteItem(item.id) })
+                    WardrobeCard(
+                        item = item,
+                        onDelete = { viewModel.deleteItem(item.id) },
+                        onEditPrice = { viewModel.updateItemPrice(item.id, "$39.99") }
+                    )
                 }
             }
         }
@@ -125,7 +129,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit) {
+fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit, onEditPrice: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -151,6 +155,12 @@ fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onEditPrice
+            ) {
+                Text("Edit Price")
+            }
 
             // Delete Operation Trigger
             Button(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {

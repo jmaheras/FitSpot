@@ -20,6 +20,18 @@ class WardrobeRepository {
         awaitClose { subscription.remove() }
     }
 
+    fun updateWardrobeItemPrice(itemId: String, newPrice: String) {
+        val db = FirebaseFirestore.getInstance()
+        db.collection("wardrobe").document(itemId)
+            .update("price", newPrice)
+            .addOnSuccessListener {
+                // Successfully updated in Firestore
+            }
+            .addOnFailureListener { e ->
+                // Handle the error
+            }
+    }
+
     fun addItem(item: WardrobeItem) = collection.add(item)
 
     fun updateItem(item: WardrobeItem) = collection.document(item.id).set(item)
