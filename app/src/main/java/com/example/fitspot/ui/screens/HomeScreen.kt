@@ -23,6 +23,8 @@ import com.example.fitspot.models.WardrobeItem
 import com.example.fitspot.viewmodel.WardrobeViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
 
 @Composable
 fun HomeScreen(
@@ -120,7 +122,8 @@ fun HomeScreen(
                     WardrobeCard(
                         item = item,
                         onDelete = { viewModel.deleteItem(item.id) },
-                        onEditPrice = { viewModel.updateItemPrice(item.id, "$39.99") }
+                        // Catch the custom string from the dialog and send it to the ViewModel
+                        onEditPrice = { newPrice -> viewModel.updateItemPrice(item.id, newPrice) }
                     )
                 }
             }
@@ -129,7 +132,42 @@ fun HomeScreen(
 }
 
 @Composable
-fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit, onEditPrice: () -> Unit) {
+fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit, onEditPrice: (String) -> Unit) {
+    // State to manage the pop-up dialog and text input
+    var showEditDialog by remember { mutableStateOf(false) }
+    var priceInput by remember { mutableStateOf(item.price) }
+
+    // The Pop-up Dialog
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Item Price") },
+            text = {
+                OutlinedTextField(
+                    value = priceInput,
+                    onValueChange = { priceInput = it },
+                    label = { Text("New Price") }
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onEditPrice(priceInput) // Send the typed price to Firestore
+                        showEditDialog = false  // Close the dialog
+                    }
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showEditDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // The Standard Card UI
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -139,10 +177,7 @@ fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit, onEditPrice: () -> Un
         Column(
             modifier = Modifier.padding(12.dp)
         ) {
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleMedium
-            )
+            Text(text = item.title, style = MaterialTheme.typography.titleMedium)
             Text(
                 text = item.category.uppercase(),
                 style = MaterialTheme.typography.labelSmall,
@@ -156,13 +191,11 @@ fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit, onEditPrice: () -> Un
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            Button(
-                onClick = onEditPrice
-            ) {
+            // This button now opens the dialog instead of instantly updating
+            Button(onClick = { showEditDialog = true }) {
                 Text("Edit Price")
             }
 
-            // Delete Operation Trigger
             Button(onClick = onDelete, modifier = Modifier.fillMaxWidth()) {
                 Text("Delete")
             }
