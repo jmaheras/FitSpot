@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 data class AuthUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
+    val infoMessage: String? = null,
     val isLoggedIn: Boolean = false
 )
 
@@ -26,6 +27,19 @@ class AuthViewModel(
 
     fun signUp(email: String, password: String) = 
         authenticate { repository.signUp(email, password) }
+
+    fun resetPassword(email: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null, infoMessage = null) }
+            repository.resetPassword(email)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, infoMessage = "Password reset email sent. Check your inbox.") }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to send reset email") }
+                }
+        }
+    }
     
     fun signOut() {
         repository.signOut()

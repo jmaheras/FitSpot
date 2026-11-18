@@ -27,8 +27,10 @@ import androidx.compose.material3.CircularProgressIndicator
 fun LoginScreen(
     isLoading: Boolean = false,
     errorMessage: String? = null,
+    infoMessage: String? = null,
     onSignIn: (String, String) -> Unit,
-    onSignUp: (String, String) -> Unit
+    onSignUp: (String, String) -> Unit,
+    onResetPassword: (String) -> Unit = {}
 ) {
     DisposableEffect(Unit) {
         Log.d("FitSpotLifeCycle", "LoginScreen: Entered Screen (Composition)")
@@ -95,6 +97,11 @@ fun LoginScreen(
             Text(text = it, color = MaterialTheme.colorScheme.error)
         }
 
+        infoMessage?.let {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = it, color = MaterialTheme.colorScheme.primary)
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = {
@@ -115,7 +122,18 @@ fun LoginScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = { Log.d("FitSpotLifeCycle", "LoginScreen: Forgot password clicked") }) {
+        TextButton(
+            onClick = {
+                Log.d("FitSpotLifeCycle", "LoginScreen: Forgot password clicked")
+                if (email.isBlank()) {
+                    error = "Please enter your email to reset password"
+                } else {
+                    error = null
+                    onResetPassword(email.trim())
+                }
+            },
+            enabled = !isLoading
+        ) {
             Text("Forgot password?")
         }
         TextButton(
