@@ -31,7 +31,8 @@ import androidx.compose.animation.animateContentSize
 
 @Composable
 fun HomeScreen(
-    viewModel: WardrobeViewModel = viewModel()
+    viewModel: WardrobeViewModel = viewModel(),
+    onNavigateToScan: () -> Unit = {}
 ) {
     DisposableEffect(Unit) {
         Log.d("FitSpotLifeCycle", "HomeScreen: Entered Screen (Composition)")
@@ -55,23 +56,15 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Create Operation Trigger
+        // Quick Action: Scan New Outfit
         Button(
-            onClick = {
-                val testItem = WardrobeItem(
-                    title = "Test Jacket",
-                    category = "Jackets",
-                    retailer = "TestBrand",
-                    price = "$49.99"
-                )
-                viewModel.addItem(testItem)
-            },
+            onClick = onNavigateToScan,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
         ) {
             Text(
-                text = "➕ Add Mock Item to Database",
+                text = "📷 Scan New Outfit",
                 style = MaterialTheme.typography.titleMedium
             )
         }

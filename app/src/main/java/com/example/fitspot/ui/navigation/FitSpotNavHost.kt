@@ -113,7 +113,10 @@ fun FitSpotNavHost(
                     startDestination = Screen.Home.route
                 ) {
                     composable(Screen.Home.route) {
-                        HomeScreen(viewModel = wardrobeViewModel)
+                        HomeScreen(
+                            viewModel = wardrobeViewModel,
+                            onNavigateToScan = { navController.navigate(Screen.Scan.route) }
+                        )
                     }
                     composable(Screen.Wardrobe.route) {
                         WardrobeScreen(viewModel = wardrobeViewModel)
