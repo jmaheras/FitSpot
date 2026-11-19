@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.fitspot.ui.theme.FitSpotTheme
 import androidx.compose.material3.CircularProgressIndicator
+import com.example.fitspot.viewmodel.ResetStatus
 
 
 @Composable
@@ -28,7 +29,10 @@ fun LoginScreen(
     isLoading: Boolean = false,
     errorMessage: String? = null,
     onSignIn: (String, String) -> Unit,
-    onSignUp: (String, String) -> Unit
+    onSignUp: (String, String) -> Unit,
+    resetStatus: ResetStatus? = null,
+    onSendPasswordReset: (String) -> Unit = {},
+    onDismissReset: () -> Unit = {}
 ) {
     DisposableEffect(Unit) {
         Log.d("FitSpotLifeCycle", "LoginScreen: Entered Screen (Composition)")
@@ -41,6 +45,16 @@ fun LoginScreen(
     var password by rememberSaveable { mutableStateOf("") }
     var showPassword by rememberSaveable { mutableStateOf(false) }
     var error by rememberSaveable { mutableStateOf<String?>(null) }
+    var showReset by rememberSaveable { mutableStateOf(false) }
+
+    if (showReset) {
+        ForgotPasswordDialog(
+            initialEmail = email,
+            status = resetStatus,
+            onSend = onSendPasswordReset,
+            onDismiss = { showReset = false; onDismissReset() }
+        )
+    }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -115,7 +129,10 @@ fun LoginScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        TextButton(onClick = { Log.d("FitSpotLifeCycle", "LoginScreen: Forgot password clicked") }) {
+        TextButton(onClick = {
+            Log.d("FitSpotLifeCycle", "LoginScreen: Forgot password clicked")
+            showReset = true
+        }) {
             Text("Forgot password?")
         }
         TextButton(

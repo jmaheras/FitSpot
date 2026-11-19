@@ -34,17 +34,24 @@ class MainActivity : ComponentActivity() {
             FitSpotTheme{
                 val authViewModel: AuthViewModel = viewModel()
                 val authState by authViewModel.uiState.collectAsState()
+                val resetStatus by authViewModel.resetStatus.collectAsState()
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
                         if (authState.isLoggedIn) {
-                            HomeScreen(onHomeScreenSuccess = { authViewModel.signOut() })
+                            HomeScreen(
+                                userEmail = authViewModel.userEmail,
+                                onLogout = { authViewModel.signOut() }
+                            )
                         } else {
                             LoginScreen(
                                 isLoading = authState.isLoading,
                                 errorMessage = authState.error,
                                 onSignIn = authViewModel::signIn,
-                                onSignUp = authViewModel::signUp
+                                onSignUp = authViewModel::signUp,
+                                resetStatus = resetStatus,
+                                onSendPasswordReset = authViewModel::sendPasswordReset,
+                                onDismissReset = authViewModel::clearResetStatus
                             )
                         }
                     }

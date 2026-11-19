@@ -22,7 +22,7 @@ import androidx.compose.material3.Scaffold
 
 
 @Composable
-fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
+fun HomeScreen(userEmail: String?, onLogout: () -> Unit) {
     DisposableEffect(Unit) {
         Log.d("FitSpotLifeCycle", "HomeScreen: Entered Screen (Composition)")
         onDispose {
@@ -59,16 +59,19 @@ fun HomeScreen(onHomeScreenSuccess: () -> Unit) {
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
-                    onClick = {
-                        selectedTab = 2
-                        onHomeScreenSuccess() // Log out when Profile/Log out clicked
-                    },
+                    onClick = { selectedTab = 2 },
                     label = { Text("Profile") },
                     icon = { Text("👤") }
                 )
             }
         }
     ) { innerPadding ->
+        if (selectedTab == 2) {
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                ProfileScreen(email = userEmail, onLogout = onLogout)
+            }
+            return@Scaffold
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()

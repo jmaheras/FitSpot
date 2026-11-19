@@ -15,6 +15,8 @@ data class AuthUiState(
     val isLoggedIn: Boolean = false
 )
 
+data class ResetStatus(val message: String, val isError: Boolean)
+
 class AuthViewModel(
     private val repository: AuthRepository = AuthRepository()
 ): ViewModel() {
@@ -27,6 +29,32 @@ class AuthViewModel(
     fun signUp(email: String, password: String) = 
         authenticate { repository.signUp(email, password) }
     
+    val userEmail: String?
+        get() = repository.currentEmail
+
+    private val _resetStatus = MutableStateFlow<ResetStatus?>(null)
+    val resetStatus: StateFlow<ResetStatus?> = _resetStatus.asStateFlow()
+
+    fun sendPasswordReset(email: String) {
+        viewModelScope.launch {
+            repository.sendPasswordReset(email)
+                .onSuccess {
+                    _resetStatus.value = ResetStatus(
+                        "If an account exists for $email, a reset link has been sent.", isError = false
+                    )
+                }
+                .onFailure { e ->
+                    _resetStatus.value = ResetStatus(
+                        e.message ?: "Could not send reset email", isError = true
+                    )
+                }
+        }
+    }
+
+    fun clearResetStatus() {
+        _resetStatus.value = null
+    }
+
     fun signOut() {
         repository.signOut()
         _uiState.value = AuthUiState(isLoggedIn = false)
