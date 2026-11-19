@@ -59,6 +59,12 @@ fun HomeScreen(
                     icon = { Text("👕") }
                 )
                 NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    label = { Text("Stores") },
+                    icon = { Text("📍") }
+                )
+                NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = {
                         selectedTab = 2
@@ -70,6 +76,12 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
+        if (selectedTab == 3) {
+            Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                StoresScreen()
+            }
+            return@Scaffold
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
