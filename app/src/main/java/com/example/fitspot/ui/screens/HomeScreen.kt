@@ -15,9 +15,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fitspot.models.WardrobeItem
 import com.example.fitspot.viewmodel.WardrobeViewModel
@@ -25,11 +22,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.animation.animateContentSize
 
 @Composable
 fun HomeScreen(
     viewModel: WardrobeViewModel = viewModel(),
-    onHomeScreenSuccess: () -> Unit
+    onNavigateToScan: () -> Unit = {}
 ) {
     DisposableEffect(Unit) {
         Log.d("FitSpotLifeCycle", "HomeScreen: Entered Screen (Composition)")
@@ -38,94 +38,54 @@ fun HomeScreen(
         }
     }
 
-    var selectedTab by remember { mutableStateOf(0) }
-
     // Observe live Firebase data instead of the hardcoded list
     val wardrobeItems by viewModel.wardrobeItems.collectAsState()
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    label = { Text("Home") },
-                    icon = { Text("🏠") }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    label = { Text("Wardrobe") },
-                    icon = { Text("👕") }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = {
-                        selectedTab = 2
-                        onHomeScreenSuccess()
-                    },
-                    label = { Text("Profile") },
-                    icon = { Text("👤") }
-                )
-            }
-        }
-    ) { innerPadding ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "FitSpot",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Quick Action: Scan New Outfit
+        Button(
+            onClick = onNavigateToScan,
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
+                .fillMaxWidth()
+                .height(56.dp)
         ) {
             Text(
-                text = "FitSpot",
-                style = MaterialTheme.typography.headlineMedium
+                text = "📷 Scan New Outfit",
+                style = MaterialTheme.typography.titleMedium
             )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-            // Create Operation Trigger
-            Button(
-                onClick = {
-                    val testItem = WardrobeItem(
-                        title = "Test Jacket",
-                        category = "Jackets",
-                        retailer = "TestBrand",
-                        price = "$49.99"
-                    )
-                    viewModel.addItem(testItem)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-            ) {
-                Text(
-                    text = "➕ Add Mock Item to Database",
-                    style = MaterialTheme.typography.titleMedium
+        Text(
+            text = "Recent Scans",
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Read Operation Display
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(wardrobeItems) { item ->
+                WardrobeCard(
+                    item = item,
+                    onDelete = { viewModel.deleteItem(item.id) },
+                    onEditPrice = { newPrice -> viewModel.updateItemPrice(item.id, newPrice) }
                 )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Recent Scans",
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Read Operation Display
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(wardrobeItems) { item ->
-                    WardrobeCard(
-                        item = item,
-                        onDelete = { viewModel.deleteItem(item.id) },
-                        // Catch the custom string from the dialog and send it to the ViewModel
-                        onEditPrice = { newPrice -> viewModel.updateItemPrice(item.id, newPrice) }
-                    )
-                }
             }
         }
     }
@@ -175,8 +135,21 @@ fun WardrobeCard(item: WardrobeItem, onDelete: () -> Unit, onEditPrice: (String)
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier
+                .padding(12.dp)
+                .animateContentSize()
         ) {
+            if (item.imageUrl.isNotBlank()) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .padding(bottom = 8.dp),
+                    contentScale = ContentScale.Crop
+                )
+            }
             Text(text = item.title, style = MaterialTheme.typography.titleMedium)
             Text(
                 text = item.category.uppercase(),

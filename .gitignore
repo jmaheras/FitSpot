@@ -13,3 +13,16 @@
 .externalNativeBuild
 .cxx
 local.properties
+app/google-services.json
+
+# Secrets / signing material - never commit
+secrets.properties
+keystore.properties
+.env
+.env.*
+*.jks
+*.keystore
+!debug.keystore
+*.pem
+*.p12
+service-account*.json

@@ -12,8 +12,11 @@ import kotlinx.coroutines.launch
 data class AuthUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
+    val infoMessage: String? = null,
     val isLoggedIn: Boolean = false
 )
+
+data class ResetStatus(val message: String, val isError: Boolean)
 
 class AuthViewModel(
     private val repository: AuthRepository = AuthRepository()
@@ -26,7 +29,46 @@ class AuthViewModel(
 
     fun signUp(email: String, password: String) = 
         authenticate { repository.signUp(email, password) }
+
+    fun resetPassword(email: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null, infoMessage = null) }
+            repository.resetPassword(email)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, infoMessage = "Password reset email sent. Check your inbox.") }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to send reset email") }
+                }
+        }
+    }
     
+    val userEmail: String?
+        get() = repository.currentEmail
+
+    private val _resetStatus = MutableStateFlow<ResetStatus?>(null)
+    val resetStatus: StateFlow<ResetStatus?> = _resetStatus.asStateFlow()
+
+    fun sendPasswordReset(email: String) {
+        viewModelScope.launch {
+            repository.sendPasswordReset(email)
+                .onSuccess {
+                    _resetStatus.value = ResetStatus(
+                        "If an account exists for $email, a reset link has been sent.", isError = false
+                    )
+                }
+                .onFailure { e ->
+                    _resetStatus.value = ResetStatus(
+                        e.message ?: "Could not send reset email", isError = true
+                    )
+                }
+        }
+    }
+
+    fun clearResetStatus() {
+        _resetStatus.value = null
+    }
+
     fun signOut() {
         repository.signOut()
         _uiState.value = AuthUiState(isLoggedIn = false)

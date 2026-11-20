@@ -21,7 +21,22 @@ class AuthRepository(
             Unit
         }
     
+    val currentEmail: String?
+        get() = auth.currentUser?.email
+
+    suspend fun sendPasswordReset(email: String): Result<Unit> =
+        runCatching {
+            auth.sendPasswordResetEmail(email).await()
+            Unit
+        }
+
     fun signOut() {
         auth.signOut()
     }
+
+    suspend fun resetPassword(email: String): Result<Unit> =
+        runCatching {
+            auth.sendPasswordResetEmail(email).await()
+            Unit
+        }
 }

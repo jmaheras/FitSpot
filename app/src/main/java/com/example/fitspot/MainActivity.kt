@@ -17,10 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.fitspot.ui.theme.FitSpotTheme
-import com.example.fitspot.ui.screens.LoginScreen
-import com.example.fitspot.ui.screens.HomeScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fitspot.viewmodel.AuthViewModel
+import com.example.fitspot.ui.navigation.FitSpotNavHost
 
 import android.util.Log
 private const val TAG = "FitSpotLifeCycle"
@@ -31,24 +28,8 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "MainActivity: onCreate called ")
         enableEdgeToEdge()
         setContent{
-            FitSpotTheme{
-                val authViewModel: AuthViewModel = viewModel()
-                val authState by authViewModel.uiState.collectAsState()
-
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Box(modifier = Modifier.padding(innerPadding)) {
-                        if (authState.isLoggedIn) {
-                            HomeScreen(onHomeScreenSuccess = { authViewModel.signOut() })
-                        } else {
-                            LoginScreen(
-                                isLoading = authState.isLoading,
-                                errorMessage = authState.error,
-                                onSignIn = authViewModel::signIn,
-                                onSignUp = authViewModel::signUp
-                            )
-                        }
-                    }
-                }
+            FitSpotTheme {
+                FitSpotNavHost()
             }
         }
     }
