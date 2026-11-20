@@ -6,4 +6,7 @@ sealed class Screen(val route: String) {
     object Wardrobe : Screen("wardrobe")
     object Scan : Screen("scan")
     object Map : Screen("map")
+    object Profile : Screen("profile")
+    object Stores : Screen("stores")
+    object Crop : Screen("crop")
 }
