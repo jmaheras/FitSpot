@@ -15,9 +15,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fitspot.models.WardrobeItem
 import com.example.fitspot.viewmodel.WardrobeViewModel

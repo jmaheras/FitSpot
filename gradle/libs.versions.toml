@@ -15,9 +15,9 @@ lifecycleViewmodelCompose = "2.9.0"
 navigationCompose = "2.8.5"
 coil = "2.7.0"
 camerax = "1.4.1"
-mapsCompose = "6.2.1"
-playServicesMaps = "19.0.0"
-playServicesLocation = "21.3.0"
+mapsCompose = "6.7.2"
+playServicesMaps = "20.1.0"
+playServicesLocation = "21.4.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -53,4 +53,3 @@ play-services-location = { group = "com.google.android.gms", name = "play-servic
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
-
