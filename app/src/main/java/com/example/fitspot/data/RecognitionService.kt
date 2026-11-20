@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit
 
 class RecognitionService {
     private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
     private val cache = mutableMapOf<String, List<DetectedClothingItem>>()
@@ -39,13 +39,13 @@ class RecognitionService {
         }
 
         // We added "gemini-1.5-flash" back to the front of the list, which will work perfectly with a brand new, standard personal API key
-        val modelsToTry = listOf("gemini-1.5-flash", "gemini-2.5-flash", "gemini-3.5-flash", "gemini-3.7-flash")
+        val modelsToTry = listOf("gemini-3.5-flash", "gemini-1.5-flash", "gemini-2.5-flash", "gemini-3.7-flash")
         var lastErrorMsg = ""
 
         var lastErrorCode = -1
 
         val bitmap = getBitmapFromUri(context, imageUri)
-        val resizedBitmap = resizeBitmap(bitmap, 1024)
+        val resizedBitmap = resizeBitmap(bitmap, 512) // Resize to 512px to dramatically reduce upload size and prevent timeout
         val base64Image = encodeImageToBase64(resizedBitmap)
 
         val prompt = """
@@ -140,11 +140,16 @@ class RecognitionService {
         }
         
         val userFriendlyMessage = when {
-            lastErrorCode == 503 -> "The AI models are currently busy. Please try again in a few minutes."
-            lastErrorCode == 429 -> "Your API key is out of tokens/calls. Please use a fresh key or wait for the quota to reset."
+            lastErrorCode == 503 -> "Server Error (503): The AI models are currently overwhelmed and busy. Please wait a few minutes and try again."
+            lastErrorCode == 429 -> "Quota Error (429): Your Google AI API key has run out of tokens or hit its rate limit. Please use a fresh API key or wait for the quota to reset."
+            lastErrorCode == 400 -> "Auth Error (400): The API key provided in local.properties is invalid."
+            lastErrorCode == 402 -> "Billing Error (402): The Google account linked to this API key has depleted its credits. Please generate a new key."
+            lastErrorCode == 404 -> "Model Error (404): The specified Gemini model is not available for this API key."
+            lastErrorMsg.contains("timeout", ignoreCase = true) -> "Network Error: The connection timed out while uploading the image to Google. Please check your internet connection and try again."
             else -> "Failed to identify apparel. Reason: $lastErrorMsg"
         }
         
+        Log.e("FitSpot", userFriendlyMessage)
         throw Exception(userFriendlyMessage)
     }
 
