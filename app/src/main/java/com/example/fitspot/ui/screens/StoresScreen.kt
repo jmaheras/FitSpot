@@ -10,7 +10,14 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -149,6 +156,47 @@ fun StoresScreen(viewModel: StoresViewModel = viewModel()) {
             Spacer(Modifier.height(12.dp))
             StoreDetailsCard(store = store, onDirections = { openDirections(context, store) })
         }
+
+        if (state.stores.isNotEmpty()) {
+            Spacer(Modifier.height(12.dp))
+            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 150.dp)) {
+                items(state.stores, key = { it.id }) { store ->
+                    StoreRow(
+                        store = store,
+                        selected = store.id == state.selected?.id,
+                        onClick = {
+                            viewModel.select(store)
+                            scope.launch {
+                                cameraState.animate(
+                                    CameraUpdateFactory.newLatLngZoom(
+                                        LatLng(store.latitude, store.longitude), 15f
+                                    )
+                                )
+                            }
+                        }
+                    )
+                    HorizontalDivider()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoreRow(store: Store, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(
+                if (selected) MaterialTheme.colorScheme.secondaryContainer
+                else MaterialTheme.colorScheme.surface
+            )
+            .padding(vertical = 10.dp, horizontal = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(store.name, style = MaterialTheme.typography.bodyLarge)
+        Text(formatDistance(store.distanceMeters), style = MaterialTheme.typography.bodyMedium)
     }
 }
 
