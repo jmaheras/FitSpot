@@ -1,48 +1,66 @@
 package com.example.fitspot.data
 
+import android.net.Uri
+import com.example.fitspot.BuildConfig
 import com.example.fitspot.models.ShoppingProduct
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import java.util.UUID
 
 class ShoppingRepository {
-    fun getProductRecommendations(label: String): List<ShoppingProduct> {
-        return when (label) {
-            "Denim Jacket" -> listOf(
-                ShoppingProduct(
-                    id = "p1",
-                    title = "Levi's Trucker Denim Jacket",
-                    retailer = "Levi's",
-                    price = "$89.50",
-                    imageUrl = "https://images.unsplash.com/photo-1576995853123-5a10305d93c0",
-                    productUrl = "https://www.levi.com"
-                ),
-                ShoppingProduct(
-                    id = "p2",
-                    title = "Vintage Wash Denim Jacket",
-                    retailer = "Gap",
-                    price = "$69.99",
-                    imageUrl = "https://images.unsplash.com/photo-1551028719-00167b16eac5",
-                    productUrl = "https://www.gap.com"
-                )
-            )
-            "White Cotton Tee" -> listOf(
-                ShoppingProduct(
-                    id = "p3",
-                    title = "Essential Crewneck Cotton Tee",
-                    retailer = "Uniqlo",
-                    price = "$19.90",
-                    imageUrl = "https://images.unsplash.com/photo-1521572267360-ee0c2909d518",
-                    productUrl = "https://www.uniqlo.com"
-                )
-            )
-            else -> listOf(
-                ShoppingProduct(
-                    id = "p4",
-                    title = "Retro Court Classic Sneakers",
-                    retailer = "Adidas",
-                    price = "$110.00",
-                    imageUrl = "https://images.unsplash.com/photo-1549298916-b41d501d3772",
-                    productUrl = "https://www.adidas.com"
-                )
-            )
+    private val client = OkHttpClient()
+    private val cache = mutableMapOf<String, List<ShoppingProduct>>()
+
+    suspend fun getProductRecommendations(label: String): List<ShoppingProduct> = withContext(Dispatchers.IO) {
+        val normalizedLabel = label.trim().lowercase()
+        if (cache.containsKey(normalizedLabel)) {
+            return@withContext cache[normalizedLabel]!!
+        }
+
+        try {
+            val encodedLabel = Uri.encode(label)
+            val url = "https://serpapi.com/search.json?engine=google_shopping&q=$encodedLabel&api_key=${BuildConfig.SERPAPI_KEY}"
+            
+            val request = Request.Builder()
+                .url(url)
+                .build()
+
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string()
+
+            if (response.isSuccessful && responseBody != null) {
+                val jsonObject = JSONObject(responseBody)
+                val shoppingResults = jsonObject.optJSONArray("shopping_results") ?: return@withContext emptyList()
+                
+                val products = mutableListOf<ShoppingProduct>()
+                val maxItems = minOf(10, shoppingResults.length()) // Limit to top 10
+                
+                for (i in 0 until maxItems) {
+                    val item = shoppingResults.getJSONObject(i)
+                    products.add(
+                        ShoppingProduct(
+                            id = UUID.randomUUID().toString(),
+                            title = item.optString("title", "Unknown Title"),
+                            retailer = item.optString("source", "Unknown Retailer"),
+                            price = item.optString("price", "Price N/A"),
+                            imageUrl = item.optString("thumbnail", ""),
+                            productUrl = item.optString("product_link", "")
+                        )
+                    )
+                }
+                
+                // Save to cache before returning
+                cache[normalizedLabel] = products
+                products
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
         }
     }
 }

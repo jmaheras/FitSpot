@@ -13,11 +13,109 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fitspot.models.WardrobeItem
 import com.example.fitspot.viewmodel.WardrobeViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WardrobeScreen(
     viewModel: WardrobeViewModel = viewModel()
 ) {
     val wardrobeItems by viewModel.wardrobeItems.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    val categories = listOf("Jackets", "Shirts", "Pants", "Footwear", "Accessories", "Other")
+
+    if (showAddDialog) {
+        var title by remember { mutableStateOf("") }
+        var category by remember { mutableStateOf(categories[0]) }
+        var retailer by remember { mutableStateOf("") }
+        var price by remember { mutableStateOf("") }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
+        var expanded by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Add Wardrobe Item") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it; errorMessage = null },
+                        label = { Text("Title *") },
+                        singleLine = true
+                    )
+                    
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { expanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = category,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Category") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            modifier = Modifier.menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            categories.forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        category = option
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = retailer,
+                        onValueChange = { retailer = it },
+                        label = { Text("Retailer") },
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = price,
+                        onValueChange = { price = it; errorMessage = null },
+                        label = { Text("Price *") },
+                        singleLine = true
+                    )
+                    if (errorMessage != null) {
+                        Text(text = errorMessage!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (title.isBlank() || price.isBlank()) {
+                            errorMessage = "Title and Price cannot be blank."
+                        } else {
+                            viewModel.addItem(
+                                WardrobeItem(
+                                    title = title.trim(),
+                                    category = category,
+                                    retailer = retailer.trim(),
+                                    price = price.trim()
+                                )
+                            )
+                            showAddDialog = false
+                        }
+                    }
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -31,17 +129,9 @@ fun WardrobeScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Add Mock Item Button
+        // Add Item Button
         Button(
-            onClick = {
-                val newItem = WardrobeItem(
-                    title = "Saved Jacket",
-                    category = "Jackets",
-                    retailer = "FitSpot Store",
-                    price = "$59.99"
-                )
-                viewModel.addItem(newItem)
-            },
+            onClick = { showAddDialog = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp)

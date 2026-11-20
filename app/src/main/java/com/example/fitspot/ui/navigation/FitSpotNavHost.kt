@@ -122,7 +122,7 @@ fun FitSpotNavHost(
                         WardrobeScreen(viewModel = wardrobeViewModel)
                     }
                     composable(Screen.Scan.route) {
-                        ScanScreen(viewModel = wardrobeViewModel)
+                        ScanScreen(wardrobeViewModel = wardrobeViewModel)
                     }
                     composable(Screen.Map.route) {
                         MapScreen()

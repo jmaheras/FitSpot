@@ -13,27 +13,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.fitspot.data.StoreRepository
-import com.example.fitspot.models.RetailerStore
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fitspot.viewmodel.MapViewModel
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
 
 @Composable
-fun MapScreen() {
+fun MapScreen(
+    viewModel: MapViewModel = viewModel()
+) {
     val context = LocalContext.current
-    val storeRepository = remember { StoreRepository() }
-    val stores = remember { storeRepository.getNearbyStores() }
-
-    var selectedStore by remember { mutableStateOf<RetailerStore?>(null) }
-    var locationPermissionGranted by remember { mutableStateOf(false) }
-    var showListView by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
 
     // Location Permission Launcher
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        locationPermissionGranted = isGranted
+        viewModel.setLocationPermissionGranted(isGranted)
     }
 
     // Default Camera position centered around Columbus, OH stores
@@ -65,12 +62,12 @@ fun MapScreen() {
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    TextButton(onClick = { showListView = !showListView }) {
-                        Text(if (showListView) "🗺️ Map View" else "📋 List View")
+                    TextButton(onClick = { viewModel.toggleViewMode() }) {
+                        Text(if (uiState.showListView) "🗺️ Map View" else "📋 List View")
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                if (!locationPermissionGranted) {
+                if (!uiState.locationPermissionGranted) {
                     Button(
                         onClick = {
                             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -80,7 +77,7 @@ fun MapScreen() {
                     }
                 } else {
                     Text(
-                        text = "GPS Location Active • Showing ${stores.size} Stores Nearby",
+                        text = "GPS Location Active • Showing ${uiState.stores.size} Stores Nearby",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -88,7 +85,7 @@ fun MapScreen() {
             }
         }
 
-        if (showListView) {
+        if (uiState.showListView) {
             // Store List View
             LazyColumn(
                 modifier = Modifier
@@ -96,7 +93,7 @@ fun MapScreen() {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(stores) { store ->
+                items(uiState.stores) { store ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -129,15 +126,15 @@ fun MapScreen() {
                 GoogleMap(
                     modifier = Modifier.fillMaxSize(),
                     cameraPositionState = cameraPositionState,
-                    properties = MapProperties(isMyLocationEnabled = locationPermissionGranted)
+                    properties = MapProperties(isMyLocationEnabled = uiState.locationPermissionGranted)
                 ) {
-                    stores.forEach { store ->
+                    uiState.stores.forEach { store ->
                         Marker(
                             state = MarkerState(position = LatLng(store.latitude, store.longitude)),
                             title = store.name,
                             snippet = "${store.distance} • ${store.inStockStatus}",
                             onClick = {
-                                selectedStore = store
+                                viewModel.selectStore(store)
                                 true
                             }
                         )
@@ -145,9 +142,9 @@ fun MapScreen() {
                 }
 
                 // Store Details Pop-up / Dialog
-                selectedStore?.let { store ->
+                uiState.selectedStore?.let { store ->
                     AlertDialog(
-                        onDismissRequest = { selectedStore = null },
+                        onDismissRequest = { viewModel.selectStore(null) },
                         title = { Text(text = store.name) },
                         text = {
                             Column {
@@ -184,7 +181,7 @@ fun MapScreen() {
                             }
                         },
                         dismissButton = {
-                            OutlinedButton(onClick = { selectedStore = null }) {
+                            OutlinedButton(onClick = { viewModel.selectStore(null) }) {
                                 Text("Close")
                             }
                         }

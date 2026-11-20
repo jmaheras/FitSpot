@@ -21,40 +21,27 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.fitspot.data.RecognitionService
-import com.example.fitspot.data.ShoppingRepository
-import com.example.fitspot.models.DetectedClothingItem
-import com.example.fitspot.models.ShoppingProduct
 import com.example.fitspot.models.WardrobeItem
+import com.example.fitspot.viewmodel.ScanViewModel
 import com.example.fitspot.viewmodel.WardrobeViewModel
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanScreen(
-    viewModel: WardrobeViewModel = viewModel()
+    wardrobeViewModel: WardrobeViewModel = viewModel(),
+    scanViewModel: ScanViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val recognitionService = remember { RecognitionService() }
-    val shoppingRepository = remember { ShoppingRepository() }
-
-    var imageUri by remember { mutableStateOf<Uri?>(null) }
+    val uiState by scanViewModel.uiState.collectAsState()
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
-    var detectedItems by remember { mutableStateOf<List<DetectedClothingItem>>(emptyList()) }
-    var selectedTag by remember { mutableStateOf<String?>(null) }
-    var products by remember { mutableStateOf<List<ShoppingProduct>>(emptyList()) }
-    var notificationMsg by remember { mutableStateOf<String?>(null) }
 
     // Gallery Picker Launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            imageUri = uri
-            detectedItems = emptyList()
-            selectedTag = null
-            products = emptyList()
-            notificationMsg = null
+            scanViewModel.onImageSelected(uri)
         }
     }
 
@@ -63,11 +50,7 @@ fun ScanScreen(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
         if (success && tempCameraUri != null) {
-            imageUri = tempCameraUri
-            detectedItems = emptyList()
-            selectedTag = null
-            products = emptyList()
-            notificationMsg = null
+            scanViewModel.onImageSelected(tempCameraUri)
         }
     }
 
@@ -104,14 +87,14 @@ fun ScanScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Image Preview or Placeholder
-        if (imageUri != null) {
+        if (uiState.imageUri != null) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(220.dp)
             ) {
                 AsyncImage(
-                    model = imageUri,
+                    model = uiState.imageUri,
                     contentDescription = "Scanned Outfit",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -161,26 +144,35 @@ fun ScanScreen(
             }
         }
 
-        if (imageUri != null) {
+        if (uiState.imageUri != null) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = {
-                    val items = recognitionService.scanImageForApparel(imageUri)
-                    detectedItems = items
-                    if (items.isNotEmpty()) {
-                        selectedTag = items.first().label
-                        products = shoppingRepository.getProductRecommendations(items.first().label)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
+                onClick = { scanViewModel.scanImage(context) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !uiState.isLoading
             ) {
-                Text("🔍 Scan & Identify Apparel")
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Scanning...")
+                } else {
+                    Text("🔍 Scan & Identify Apparel")
+                }
             }
+        }
+        
+        uiState.error?.let { errorMsg ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = errorMsg, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
         }
 
         // Display Identified Clothing Tags
-        if (detectedItems.isNotEmpty()) {
+        if (uiState.detectedItems.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Detected Apparel Pieces:",
@@ -193,13 +185,10 @@ fun ScanScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                items(detectedItems) { item ->
+                items(uiState.detectedItems) { item ->
                     FilterChip(
-                        selected = selectedTag == item.label,
-                        onClick = {
-                            selectedTag = item.label
-                            products = shoppingRepository.getProductRecommendations(item.label)
-                        },
+                        selected = uiState.selectedTag == item.label,
+                        onClick = { scanViewModel.onTagSelected(item.label) },
                         label = { Text("${item.label} (${(item.confidence * 100).toInt()}%)") }
                     )
                 }
@@ -207,16 +196,16 @@ fun ScanScreen(
         }
 
         // Display Shopping Recommendations
-        if (products.isNotEmpty()) {
+        if (uiState.products.isNotEmpty()) {
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "Product Recommendations for \"$selectedTag\":",
+                text = "Product Recommendations for \"${uiState.selectedTag}\":",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.align(Alignment.Start)
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            products.forEach { product ->
+            uiState.products.forEach { product ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -255,13 +244,13 @@ fun ScanScreen(
                                 onClick = {
                                     val newItem = WardrobeItem(
                                         title = product.title,
-                                        category = selectedTag ?: "Apparel",
+                                        category = uiState.selectedTag ?: "Apparel",
                                         retailer = product.retailer,
                                         price = product.price,
                                         imageUrl = product.imageUrl
                                     )
-                                    viewModel.addItem(newItem)
-                                    notificationMsg = "Saved \"${product.title}\" to Wardrobe!"
+                                    wardrobeViewModel.addItem(newItem)
+                                    scanViewModel.setNotification("Saved \"${product.title}\" to Wardrobe!")
                                 },
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -272,7 +261,7 @@ fun ScanScreen(
                 }
             }
 
-            notificationMsg?.let { msg ->
+            uiState.notificationMsg?.let { msg ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = msg, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
             }
