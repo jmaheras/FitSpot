@@ -44,7 +44,6 @@ fun FitSpotNavHost(
             infoMessage = authState.infoMessage,
             onSignIn = authViewModel::signIn,
             onSignUp = authViewModel::signUp,
-            onResetPassword = authViewModel::resetPassword,
             resetStatus = resetStatus,
             onSendPasswordReset = authViewModel::sendPasswordReset,
             onDismissReset = authViewModel::clearResetStatus
