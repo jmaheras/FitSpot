@@ -41,7 +41,6 @@ fun FitSpotNavHost(
         LoginScreen(
             isLoading = authState.isLoading,
             errorMessage = authState.error,
-            infoMessage = authState.infoMessage,
             onSignIn = authViewModel::signIn,
             onSignUp = authViewModel::signUp,
             resetStatus = resetStatus,

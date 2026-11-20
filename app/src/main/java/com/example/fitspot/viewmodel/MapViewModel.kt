@@ -1,7 +1,7 @@
 package com.example.fitspot.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.fitspot.data.StoreRepository
+import com.example.fitspot.data.RetailerStoreRepository
 import com.example.fitspot.models.RetailerStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,7 @@ data class MapUiState(
 )
 
 class MapViewModel(
-    private val storeRepository: StoreRepository = StoreRepository()
+    private val storeRepository: RetailerStoreRepository = RetailerStoreRepository()
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapUiState(stores = storeRepository.getNearbyStores()))
